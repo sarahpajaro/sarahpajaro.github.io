@@ -3,231 +3,489 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Portfolio</title>
+  <meta name="description" content="Sarah Pajaro's portfolio of data, language, and machine learning projects.">
+  <title>Sarah Pajaro | Portfolio</title>
   <style>
-    /* --- General Reset & Fonts --- */
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --panel-alt: #eef4ff;
+      --ink: #18212f;
+      --muted: #586575;
+      --line: #dfe7f1;
+      --brand: #1967d2;
+      --brand-soft: #eaf2ff;
+      --accent: #0e8a74;
+      --shadow: 0 18px 42px rgba(20, 35, 58, 0.08);
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
+
     body {
-      background-color: #f8f9fa;
-      color: #333;
+      background: linear-gradient(180deg, #eef3f8 0%, #f8fafc 100%);
+      color: var(--ink);
       line-height: 1.6;
-      padding: 20px;
-    }
-    .portfolio-container {
-      max-width: 1000px;
-      margin: 40px auto;
-      background: #ffffff;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    }
-    header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    header h1 {
-      font-size: 2.5rem;
-      color: #111;
+      min-height: 100vh;
+      padding: 32px 18px;
     }
 
-    /* --- Tab Navigation System --- */
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .portfolio-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(199, 211, 228, 0.8);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+      overflow: hidden;
+    }
+
+    header {
+      padding: 36px 48px 20px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.65);
+    }
+
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .title-wrap h1 {
+      font-size: clamp(2rem, 2vw + 1rem, 3rem);
+      letter-spacing: -0.04em;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
     .tabs-wrapper {
       display: flex;
       flex-direction: column;
+      padding: 0 48px 32px;
     }
+
     .tab-inputs {
-      display: none; /* Hide actual radio inputs */
+      display: none;
     }
+
     .tab-navigation-bar {
       display: flex;
+      align-items: center;
       justify-content: center;
-      border-bottom: 2px solid #e9ecef;
-      margin-bottom: 30px;
-    }
-    .tab-label {
-      padding: 12px 30px;
-      cursor: pointer;
-      font-weight: 600;
-      color: #6c757d;
-      transition: all 0.2s ease;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -2px;
-    }
-    .tab-label:hover {
-      color: #007bff;
+      gap: 18px;
+      padding: 16px 0 10px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 28px;
     }
 
-    /* Target specific views based on which radio input is selected */
+    .tab-label {
+      position: relative;
+      padding: 12px 18px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 999px;
+      transition: all 0.2s ease;
+    }
+
+    .tab-label:hover {
+      background: var(--panel-alt);
+      color: var(--brand);
+    }
+
     #tab-about-input:checked ~ .tab-navigation-bar label[for="tab-about-input"],
     #tab-projects-input:checked ~ .tab-navigation-bar label[for="tab-projects-input"] {
-      color: #007bff;
-      border-bottom: 2px solid #007bff;
+      background: var(--brand-soft);
+      color: var(--brand);
+      box-shadow: inset 0 0 0 1px rgba(25, 103, 210, 0.12);
     }
 
-    /* Hide contents by default, show based on active tab selection */
     .tab-panel {
       display: none;
     }
+
     #tab-about-input:checked ~ .tab-content-area #about-panel,
     #tab-projects-input:checked ~ .tab-content-area #projects-panel {
       display: block;
     }
 
-    /* --- Responsive Projects Grid Layout --- */
+    .content-panel {
+      padding: 8px 0 0;
+    }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .about-copy {
+      padding: 8px 0;
+    }
+
+    .eyebrow {
+      color: var(--brand);
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .about-copy h2 {
+      font-size: clamp(2rem, 1vw + 1.4rem, 3rem);
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+      margin-bottom: 16px;
+    }
+
+    .about-copy p {
+      color: var(--muted);
+      font-size: 1.04rem;
+      margin-bottom: 18px;
+      max-width: 62ch;
+    }
+
+    .mini-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(110px, 1fr));
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .stat {
+      background: linear-gradient(180deg, #f8fbff 0%, #edf4ff 100%);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.4rem;
+      letter-spacing: -0.04em;
+      margin-bottom: 4px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .profile-card {
+      background: linear-gradient(180deg, #f6f9ff 0%, #edf3ff 100%);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 24px;
+    }
+
+    .profile-card h3 {
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+    }
+
+    .profile-card ul {
+      list-style: none;
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .profile-card li {
+      color: var(--muted);
+      padding-left: 16px;
+      position: relative;
+    }
+
+    .profile-card li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--brand);
+      font-weight: 700;
+    }
+
     .projects-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 25px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
     }
+
     .project-card {
-      background: #ffffff;
-      border: 1px solid #e9ecef;
-      border-radius: 8px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
       padding: 20px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      min-height: 100%;
+      transition: transform 0.22s ease, box-shadow 0.22s ease;
     }
+
     .project-card:hover {
       transform: translateY(-4px);
-      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      box-shadow: 0 18px 30px rgba(16, 24, 40, 0.08);
     }
+
+    .project-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
     .project-card h3 {
-      font-size: 1.3rem;
-      margin-bottom: 10px;
-      color: #222;
+      font-size: 1.45rem;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
     }
+
     .project-card p {
-      font-size: 0.95rem;
-      color: #555;
-      margin-bottom: 15px;
+      color: var(--muted);
+      margin-bottom: 18px;
       flex-grow: 1;
     }
+
     .tech-tags {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 15px;
+      gap: 8px;
+      margin-bottom: 18px;
     }
+
     .tech-tags span {
-      background: #e7f5ff;
-      color: #007bff;
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 4px 8px;
-      border-radius: 4px;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 6px 9px;
+      border-radius: 999px;
+      letter-spacing: 0.03em;
     }
+
+    .project-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: auto;
+    }
+
     .project-links a {
+      color: var(--brand);
+      font-weight: 600;
       font-size: 0.9rem;
-      color: #007bff;
-      text-decoration: none;
-      font-weight: 500;
-      margin-right: 15px;
     }
+
     .project-links a:hover {
       text-decoration: underline;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 18px 12px;
+      }
+
+      header,
+      .tabs-wrapper {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .about-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .mini-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .tab-navigation-bar {
+        justify-content: flex-start;
+        overflow-x: auto;
+      }
     }
   </style>
 </head>
 <body>
-
   <div class="portfolio-container">
     <header>
-      <h1>Sarah Pajaro</h1>
-      <p>Fall 2026</p>
+      <div class="title-wrap">
+        <div>
+          <div class="subtitle">Data • Language • Insight</div>
+          <h1>Sarah Pajaro</h1>
+        </div>
+        <div class="subtitle">Portfolio</div>
+      </div>
     </header>
 
     <div class="tabs-wrapper">
-      <!-- Hidden Radio Buttons that control the Tab State -->
       <input type="radio" name="portfolio-tabs" id="tab-about-input" class="tab-inputs" checked>
       <input type="radio" name="portfolio-tabs" id="tab-projects-input" class="tab-inputs">
 
-      <!-- Clickable Tab Handles -->
-      <nav class="tab-navigation-bar">
+      <nav class="tab-navigation-bar" aria-label="Portfolio sections">
         <label for="tab-about-input" class="tab-label">About Me</label>
         <label for="tab-projects-input" class="tab-label">Projects</label>
       </nav>
 
-      <!-- The Dynamic Content Viewports -->
       <main class="tab-content-area">
-        
-        <!-- Tab Panel 1: About Me -->
-        <section id="about-panel" class="tab-panel">
-          <h2>Hello!</h2>
-          <p>Welcome to my web development and programming portfolio. Click on the <b>Projects</b> tab above to explore the latest 10 software programs I have built from scratch.</p>
-        </section>
+        <section id="about-panel" class="tab-panel content-panel">
+          <div class="about-grid">
+            <div class="about-copy">
+              <p class="eyebrow">About me</p>
+              <h2>I turn complex information into clear, useful insight.</h2>
+              <p>I'm Sarah, a developer and analyst working at the intersection of language, data, and machine learning. My work explores how financial narratives, text patterns, and computational models can uncover meaning that is easy to miss at first glance.</p>
+              <p>I enjoy building thoughtful projects that combine rigorous analysis with accessible communication — from parsing earnings call transcripts to classifying text and experimenting with classic ML pipelines.</p>
 
-        <!-- Tab Panel 2: Projects Showcase Grid -->
-        <section id="projects-panel" class="tab-panel">
-          <div class="projects-grid">
-            
-            <!-- Project Card 1 -->
-            <div class="project-card">
-              <div>
-                <h3>E-Commerce Engine</h3>
-                <div class="tech-tags">
-                  <span>React</span><span>Node.js</span><span>MongoDB</span>
+              <div class="mini-stats">
+                <div class="stat">
+                  <strong>7</strong>
+                  <span>Projects</span>
                 </div>
-                <p>A full-featured online storefront platform complete with secure user authentication, shopping carts, and Stripe payment gateway mock integration.</p>
-              </div>
-              <div class="project-links">
-                <a href="#" target="_blank">Live Demo</a>
-                <a href="#" target="_blank">Source Code</a>
-              </div>
-            </div>
-
-            <!-- Project Card 2 -->
-            <div class="project-card">
-              <div>
-                <h3>Weather Forecast App</h3>
-                <div class="tech-tags">
-                  <span>JavaScript</span><span>Fetch API</span><span>CSS Grid</span>
+                <div class="stat">
+                  <strong>4</strong>
+                  <span>Core areas</span>
                 </div>
-                <p>Retrieves live geospatial coordinates and weather configurations from OpenWeatherMap, generating dynamic five-day local temperature charts.</p>
-              </div>
-              <div class="project-links">
-                <a href="#" target="_blank">Live Demo</a>
-                <a href="#" target="_blank">Source Code</a>
-              </div>
-            </div>
-
-            <!-- Project Card 3 -->
-            <div class="project-card">
-              <div>
-                <h3>Task Manager CLI</h3>
-                <div class="tech-tags">
-                  <span>Python</span><span>SQLite</span>
+                <div class="stat">
+                  <strong>∞</strong>
+                  <span>Questions</span>
                 </div>
-                <p>A native terminal tool that organizes, serializes, and flags complex daily workflows inside a lightweight local relational database shell.</p>
-              </div>
-              <div class="project-links">
-                <a href="#" target="_blank">Source Code</a>
               </div>
             </div>
 
-            <!-- Project Card 4 to 10: Copy-paste the .project-card structure below to match all 10 items -->
-            <div class="project-card">
-              <div>
-                <h3>Project Title Four</h3>
-                <div class="tech-tags"><span>HTML</span><span>CSS</span></div>
-                <p>Summary profile description detailing your fourth awesome software solution or engineering project code.</p>
-              </div>
-              <div class="project-links"><a href="#">Source Code</a></div>
-            </div>
-
+            <aside class="profile-card">
+              <h3>Focus areas</h3>
+              <ul>
+                <li>Financial text analysis</li>
+                <li>Natural language processing</li>
+                <li>Machine learning and model evaluation</li>
+                <li>Exploratory data analysis</li>
+              </ul>
+            </aside>
           </div>
         </section>
 
+        <section id="projects-panel" class="tab-panel content-panel">
+          <div class="projects-grid">
+            <article class="project-card">
+              <div class="project-top"><span>01 / Data collection</span><span>↗</span></div>
+              <h3>Earnings Call Logs</h3>
+              <p>Extracted and structured financial discussion data from public earnings-call sources.</p>
+              <div class="tech-tags">
+                <span>Python</span>
+                <span>BeautifulSoup</span>
+                <span>pandas</span>
+              </div>
+              <div class="project-links">
+                <a href="projects/earnings-call-logs/index.html">Instructions</a>
+                <a href="projects/earnings-call-logs/code.html">Code</a>
+              </div>
+            </article>
+
+            <article class="project-card">
+              <div class="project-top"><span>02 / ML</span><span>↗</span></div>
+              <h3>Handwritten Digit Recognition</h3>
+              <p>Built a classic neural-network style classifier to distinguish handwritten digits from image data.</p>
+              <div class="tech-tags">
+                <span>Python</span>
+                <span>NumPy</span>
+                <span>SciPy</span>
+              </div>
+              <div class="project-links">
+                <a href="projects/mnist/index.html">Instructions</a>
+                <a href="projects/mnist/code.html">Code</a>
+              </div>
+            </article>
+
+            <article class="project-card">
+              <div class="project-top"><span>03 / NLP</span><span>↗</span></div>
+              <h3>Earnings Call Classifier</h3>
+              <p>Classified prepared remarks versus Q&amp;A segments using text features and Naive Bayes.</p>
+              <div class="tech-tags">
+                <span>Python</span>
+                <span>Naive Bayes</span>
+                <span>Gradio</span>
+              </div>
+              <div class="project-links">
+                <a href="projects/naive-bayes/index.html">Instructions</a>
+                <a href="projects/naive-bayes/code.html">Code</a>
+              </div>
+            </article>
+
+            <article class="project-card">
+              <div class="project-top"><span>04 / Text mining</span><span>↗</span></div>
+              <h3>Readability Analysis</h3>
+              <p>Examined written text through readability metrics to understand structure, complexity, and clarity.</p>
+              <div class="tech-tags">
+                <span>Python</span>
+                <span>Text stats</span>
+                <span>EDA</span>
+              </div>
+              <div class="project-links">
+                <a href="projects/readability/index.html">Instructions</a>
+                <a href="projects/readability/code.html">Code</a>
+              </div>
+            </article>
+
+            <article class="project-card">
+              <div class="project-top"><span>05 / NLP</span><span>↗</span></div>
+              <h3>Sentiment Analysis</h3>
+              <p>Modeled subjective tone in text using practical sentiment-scoring pipelines and evaluation methods.</p>
+              <div class="tech-tags">
+                <span>Python</span>
+                <span>Text mining</span>
+                <span>Scikit-learn</span>
+              </div>
+              <div class="project-links">
+                <a href="projects/sentiment-analysis/index.html">Instructions</a>
+                <a href="projects/sentiment-analysis/code.html">Code</a>
+              </div>
+            </article>
+
+            <article class="project-card">
+              <div class="project-top"><span>06 / Regex</span><span>↗</span></div>
+              <h3>Regular Expressions Toolkit</h3>
+              <p>Built a utility-focused exploration of pattern matching for text extraction and validation tasks.</p>
+              <div class="tech-tags">
+                <span>Python</span>
+                <span>Regex</span>
+                <span>Parsing</span>
+              </div>
+              <div class="project-links">
+                <a href="projects/regular-expressions/index.html">Instructions</a>
+                <a href="projects/regular-expressions/code.html">Code</a>
+              </div>
+            </article>
+          </div>
+        </section>
       </main>
     </div>
   </div>
-
 </body>
 </html>
-

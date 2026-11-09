@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Sarah Pajaro’s portfolio of Python, text mining, financial analysis, and machine learning projects."><title>Extracting Management Discussion — Code · Sarah Pajaro</title><link rel="stylesheet" href="../../styles.css"></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="site-header wrap"><a class="wordmark" href="../../index.html" aria-label="Sarah Pajaro home"><span class="monogram">sp.</span><span>Sarah Pajaro</span></a><nav aria-label="Main navigation"><a href="../../index.html">Home</a><a href="../../about.html">About Me</a><a href="../../projects.html" aria-current="page">Projects</a></nav></header>
+<main id="main" class="wrap"><a class="back-link" href="../../projects.html">← All projects</a><section class="detail-heading"><p class="eyebrow">TEXT MINING</p><h1>Extracting Management Discussion</h1><p class="intro">Looking beyond the full filing to the section that matters.</p></section><nav class="project-tabs" aria-label="Project views"><a href="index.html">Instructions &amp; outcomes</a><a href="code.html" aria-current="page">Code</a></nav><div class="code-intro"><p>Original Python code, in notebook order. Google Colab commands are preserved.</p><a class="text-link" href="../../Regular%20Expressions.ipynb" download>Download notebook ↓</a></div><section class="code-cell"><div class="cell-label">CELL 02 · PYTHON</div><pre><code>from google.colab import drive
+drive.mount(&#x27;/content/drive&#x27;)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 03 · PYTHON</div><pre><code>!pip install syllables
+import nltk
+nltk.download(&#x27;punkt_tab&#x27;)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 04 · PYTHON</div><pre><code>import os
+import re
+import numpy as np
+import pandas as pd
+import syllables
+from nltk.tokenize import sent_tokenize
+from nltk.tokenize import word_tokenize
+from bs4 import BeautifulSoup</code></pre></section><section class="code-cell"><div class="cell-label">CELL 05 · PYTHON</div><pre><code>cmufile = &quot;/content/drive/MyDrive/Fall 2026/Text Mining/Fall 2026 Text Mining/week 04/cmudict.txt&quot;
+with open (cmufile, encoding =&#x27;latin-1&#x27;) as cmu:
+  cmuLines=cmu.readlines()
+syllableDict = {}
+for aline in cmuLines[56:]:
+  syllableCount =0
+  for char in aline:
+    if char.isdigit():
+      syllableCount +=1
+  syllableDict[aline.split()[0].lower()]=syllableCount
+
+def getSyllables(word):
+  syllables = syllableDict[word]
+  return syllables
+
+def isComplexWord(word):
+  syllables = syllableDict[word]
+  if syllables &gt; 2:
+    return True
+  else:
+    return False
+
+def isFuture(sentence):
+  futureWords = [&#x27;will&#x27;, &#x27;shall&#x27;, &#x27;may&#x27;,&#x27;might&#x27;, &#x27;should&#x27;, &#x27;going&#x27;]
+  sentWords = word_tokenize(sentence.lower())
+  for word in futureWords:
+    if word in sentWords:
+        return True
+  if &#x27;gon&#x27; in sentWords and &#x27;na&#x27; in sentWords:
+    return True
+  if &#x27;going&#x27; in sentWords and &#x27;to&#x27; in sentWords:
+    return True
+
+  return False
+</code></pre></section><section class="code-cell"><div class="cell-label">CELL 06 · PYTHON</div><pre><code>#testing to see if gonna and going to are future
+text = &quot;NLTK is gonna to be a great NLP toolkit. It is going to make processing text easy!&quot;
+sentences = sent_tokenize(text)
+words = word_tokenize(sentences[0])
+print(words)
+print(isFuture(sentences[0]))
+
+words = word_tokenize(sentences[1])
+print(words)
+print(isFuture(sentences[1]))
+</code></pre></section><section class="code-cell"><div class="cell-label">CELL 07 · PYTHON</div><pre><code>folder_path =&#x27;/content/drive/MyDrive/Fall 2026/Text Mining/10-Ks Assignment&#x27;
+print (os.listdir(folder_path))
+print (&quot;Number of files:&quot;, len(os.listdir(folder_path)))
+rows = []</code></pre></section><section class="code-cell"><div class="cell-label">CELL 08 · PYTHON</div><pre><code>#dictionary
+def load_dictionary(filepath):
+  with open (filepath, &#x27;r&#x27;, encoding = &#x27;utf-8&#x27;) as f:
+    return set(f.read().lower().split())
+#folders
+dictionary_folder = &#x27;/content/drive/MyDrive/Fall 2026/Text Mining/Dictionaries/&#x27;
+negative_words = load_dictionary(dictionary_folder + &quot;negative words.txt&quot;)
+positive_words = load_dictionary(dictionary_folder + &quot;positive words.txt&quot;)
+litigious_words = load_dictionary(dictionary_folder + &quot;litigious words.txt&quot;)
+
+for filename in os.listdir(folder_path):
+  if filename.endswith (&quot;.txt&quot;):
+    filepath = os.path.join (folder_path, filename)
+
+  with open(filepath, &#x27;r&#x27;, encoding = &#x27;utf-8&#x27;) as f:
+    raw_html = f.read()
+    clean_text = BeautifulSoup(raw_html, &#x27;lxml&#x27;).get_text()
+    clean_text = clean_text.replace(&#x27;\xa0&#x27;, &#x27; &#x27;)
+
+    sentences = sent_tokenize (clean_text)
+    total_sentences = len (sentences)
+    future_sentences = []
+    for sentence in sentences:
+      if isFuture(sentence):
+        future_sentences.append(sentence)
+    total_future_sentences = len(future_sentences)
+
+    words = word_tokenize(clean_text.lower())
+    words = [word for word in words if word.isalpha()]
+    word_count = len(words)
+
+    pos_count = sum(1 for w in words if w in positive_words)
+    neg_count = sum(1 for w in words if w in negative_words)
+    lit_count = sum(1 for w in words if w in litigious_words)
+
+    pos_rate = pos_count / word_count if word_count &gt; 0 else 0
+    neg_rate = neg_count / word_count if word_count &gt; 0 else 0
+    lit_rate = lit_count / word_count if word_count &gt; 0 else 0
+
+    future_text = &quot; &quot;.join(future_sentences)
+    future_words = word_tokenize(future_text.lower())
+    future_words = [word for word in future_words if word.isalpha()]
+    future_word_count = len(future_words)
+
+    future_pos_count = sum(1 for w in future_words if w in positive_words)
+    future_neg_count = sum(1 for w in future_words if w in negative_words)
+    future_lit_count = sum(1 for w in future_words if w in litigious_words)
+
+    future_pos_rate = future_pos_count / future_word_count if future_word_count &gt; 0 else 0
+    future_neg_rate = future_neg_count / future_word_count if future_word_count &gt; 0 else 0
+    future_lit_rate = future_lit_count / future_word_count if future_word_count &gt; 0 else 0
+
+    complex_count = 0
+    for word in words:
+      if word in syllableDict:
+        if isComplexWord(word):
+          complex_count +=1
+
+    future_complex_count = 0
+    for word in future_words:
+      if word in syllableDict:
+        if isComplexWord(word):
+          future_complex_count += 1
+    if total_sentences &gt; 0 and word_count &gt; 0:
+      fog = 0.4* ((word_count/total_sentences)+ 100*(complex_count / word_count))
+    else:
+      fog = 0
+
+    if total_future_sentences &gt; 0 and future_word_count &gt;0:
+      future_fog = 0.4 * ((future_word_count / total_future_sentences))
+    else:
+      future_fog = 0
+    matches = re.findall(
+      r&#x27;ITEM 7\..*?(?=ITEM 7A\.)&#x27;,
+      clean_text,
+      re.IGNORECASE | re.DOTALL
+    )
+    if matches:
+      mda_text = max(matches, key=len)
+    else:
+      mda_text = &quot;&quot;
+    mdasentences = sent_tokenize(mda_text)
+    mdatotal_sentences = len(mdasentences)
+    mdafuture_sentences = []
+    for sentence in mdasentences:
+      if isFuture(sentence):
+        mdafuture_sentences.append(sentence)
+    mdatotal_future_sentences = len(mdafuture_sentences)
+
+    mdawords = word_tokenize(mda_text.lower())
+    mdawords = [word for word in mdawords if word.isalpha()]
+    mdaword_count = len(mdawords)
+
+    mdapos_count = sum(1 for w in mdawords if w in positive_words)
+    mdaneg_count = sum(1 for w in mdawords if w in negative_words)
+    mdalit_count = sum(1 for w in mdawords if w in litigious_words)
+
+    mdapos_rate = mdapos_count / mdaword_count if mdaword_count &gt; 0 else 0
+    mdaneg_rate = mdaneg_count / mdaword_count if mdaword_count &gt; 0 else 0
+    mdalit_rate = mdalit_count / mdaword_count if mdaword_count &gt; 0 else 0
+
+    mdafuture_text = &quot; &quot;.join(mdafuture_sentences)
+    mdafuture_words = word_tokenize(mdafuture_text.lower())
+    mdafuture_words = [word for word in mdafuture_words if word.isalpha()]
+    mdafuture_word_count = len(mdafuture_words)
+
+    mdafuture_pos_count = sum(1 for w in mdafuture_words if w in positive_words)
+    mdafuture_neg_count = sum(1 for w in mdafuture_words if w in negative_words)
+    mdafuture_lit_count = sum(1 for w in mdafuture_words if w in litigious_words)
+
+    mdafuture_pos_rate = mdafuture_pos_count / mdafuture_word_count if mdafuture_word_count &gt; 0 else 0
+    mdafuture_neg_rate = mdafuture_neg_count / mdafuture_word_count if mdafuture_word_count &gt; 0 else 0
+    mdafuture_lit_rate = mdafuture_lit_count / mdafuture_word_count if mdafuture_word_count &gt; 0 else 0
+
+    mdacomplex_count = 0
+    for word in mdawords:
+      if word in syllableDict:
+        if isComplexWord(word):
+          mdacomplex_count +=1
+
+    mdafuture_complex_count = 0
+    for word in mdafuture_words:
+      if word in syllableDict:
+        if isComplexWord(word):
+          mdafuture_complex_count += 1
+
+    if mdatotal_sentences &gt; 0 and mdaword_count &gt; 0:
+      mdafog = 0.4 * ((mdaword_count / mdatotal_sentences) + 100 * (mdacomplex_count / mdaword_count))
+    else:
+      mdafog = 0
+
+    if mdatotal_future_sentences &gt; 0 and mdafuture_word_count &gt; 0:
+      mdafuture_fog = 0.4 * ((mdafuture_word_count / mdatotal_future_sentences))
+    else:
+      mdafuture_fog = 0
+
+  row = {
+        &#x27;Filename&#x27;: filename,
+        &#x27;TotalSentences&#x27;: total_sentences,
+        &#x27;WordCount&#x27;: word_count,
+        &#x27;PositiveWordCount&#x27;: pos_count,
+        &#x27;NegativeWordCount&#x27;: neg_count,
+        &#x27;LitigiousWordCount&#x27;: lit_count,
+        &#x27;PositivityRate&#x27;: pos_rate,
+        &#x27;NegativitiyRate&#x27; : neg_rate,
+        &#x27;LitigiousRate&#x27;: lit_rate,
+        &#x27;FuturePositiveWordCount&#x27; :future_pos_count,
+        &#x27;FutureNegativeWordCount&#x27; : future_neg_count,
+        &#x27;FutureLitigiousWordCount&#x27; : future_lit_count,
+        &#x27;FuturePositivityRate&#x27;: future_pos_rate,
+        &#x27;FutureNegativityRate&#x27; : future_neg_rate,
+        &#x27;FutureLitigiousRate&#x27;: future_lit_rate,
+        &#x27;ComplexWordCount&#x27;: complex_count,
+        &#x27;FOG&#x27;: fog,
+        &#x27;FutureFOG&#x27;: future_fog,
+        &#x27;FutureTotalSentences&#x27;: total_future_sentences,
+        &#x27;FutureWordCount&#x27;: future_word_count,
+        &#x27;FutureComplexWordCount&#x27; : future_complex_count,
+        &#x27;MDAText&#x27;: mda_text,
+        &#x27;mdaTotalSentences&#x27;: mdatotal_sentences,
+        &#x27;mdaWordCount&#x27;: mdaword_count,
+        &#x27;mdaPositiveWordCount&#x27;: mdapos_count,
+        &#x27;mdaNegativeWordCount&#x27;: mdaneg_count,
+        &#x27;mdaLitigiousWordCount&#x27;: mdalit_count,
+        &#x27;mdaPositivityRate&#x27;: mdapos_rate,
+        &#x27;mdaNegativitiyRate&#x27; : mdaneg_rate,
+        &#x27;mdaLitigiousRate&#x27;: mdalit_rate,
+        &#x27;mdaFuturePositiveWordCount&#x27; :mdafuture_pos_count,
+        &#x27;mdaFutureNegativeWordCount&#x27; : mdafuture_neg_count,
+        &#x27;mdaFutureLitigiousWordCount&#x27; : mdafuture_lit_count,
+        &#x27;mdaFuturePositivityRate&#x27;: mdafuture_pos_rate,
+        &#x27;mdaFutureNegativityRate&#x27; : mdafuture_neg_rate,
+        &#x27;mdaFutureLitigiousRate&#x27;: mdafuture_lit_rate,
+        &#x27;mdaComplexWordCount&#x27;: mdacomplex_count,
+        &#x27;mdaFOG&#x27;: mdafog,
+        &#x27;mdaFutureFOG&#x27;: mdafuture_fog,
+        &#x27;mdaFutureTotalSentences&#x27;: mdatotal_future_sentences,
+        &#x27;mdaFutureWordCount&#x27;: mdafuture_word_count,
+        &#x27;mdaFutureComplexWordCount&#x27; : mdafuture_complex_count
+  }
+  rows.append(row)
+
+df=pd.DataFrame(rows)
+pd.set_option(&#x27;display.max_rows&#x27;, None)
+pd.set_option(&#x27;display.max_columns&#x27;, None)
+
+display (df)
+
+df.to_pickle(&#x27;/content/drive/MyDrive/Fall 2026/Text Mining/Data Frame/dataFrame.pk1&#x27;)
+
+df.to_excel(&#x27;/content/drive/MyDrive/Fall 2026/Text Mining/Data Frame/dataFrame.xlsx&#x27;, index=False)
+
+
+
+</code></pre></section><section class="code-cell"><div class="cell-label">CELL 10 · PYTHON</div><pre><code>import re
+
+testString1 = &quot;blah blah blah Item 7.    Management’s Discussion and Analysis of Financial Condition and Results of Operations The following discussion should be read...\nItem 7A.    Quantitative and Qualitative Disclosures About Market Risk&quot;
+
+item7RegEx = re.compile(&quot;I(tem 7(.+?)Item 7A)&quot;, re.S)
+#print(item7RegEx.findall(testString1))
+print(item7RegEx.search(testString1).group(1))</code></pre></section><section class="code-cell"><div class="cell-label">CELL 11 · PYTHON</div><pre><code>import re
+</code></pre></section><section class="code-cell"><div class="cell-label">CELL 12 · PYTHON</div><pre><code>df = pd.read_pickle(&#x27;/content/drive/MyDrive/Fall 2026/Text Mining/Data Frame/dataFrame.pkl&#x27;)
+display (df)</code></pre></section></main><footer class="wrap"><span>© 2026 Sarah Pajaro</span><span>Curiosity. Analysis. Discovery.</span><a href="../../projects.html">Explore the work <span aria-hidden="true">↗</span></a></footer></body></html>

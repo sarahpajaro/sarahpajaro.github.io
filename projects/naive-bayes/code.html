@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Sarah Pajaro’s portfolio of Python, text mining, financial analysis, and machine learning projects."><title>Earnings Call Classifier — Code · Sarah Pajaro</title><link rel="stylesheet" href="../../styles.css"></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="site-header wrap"><a class="wordmark" href="../../index.html" aria-label="Sarah Pajaro home"><span class="monogram">sp.</span><span>Sarah Pajaro</span></a><nav aria-label="Main navigation"><a href="../../index.html">Home</a><a href="../../about.html">About Me</a><a href="../../projects.html" aria-current="page">Projects</a></nav></header>
+<main id="main" class="wrap"><a class="back-link" href="../../projects.html">← All projects</a><section class="detail-heading"><p class="eyebrow">MACHINE LEARNING</p><h1>Earnings Call Classifier</h1><p class="intro">Distinguishing prepared remarks from Q&A with language.</p></section><nav class="project-tabs" aria-label="Project views"><a href="index.html">Instructions &amp; outcomes</a><a href="code.html" aria-current="page">Code</a></nav><div class="code-intro"><p>Original Python code, in notebook order. Google Colab commands are preserved.</p><a class="text-link" href="../../Naiive%20Bayes.ipynb" download>Download notebook ↓</a></div><section class="code-cell"><div class="cell-label">CELL 02 · PYTHON</div><pre><code>from google.colab import drive
+drive.mount(&#x27;/content/drive&#x27;)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 03 · PYTHON</div><pre><code>import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+from pathlib import Path</code></pre></section><section class="code-cell"><div class="cell-label">CELL 04 · PYTHON</div><pre><code>DriveCallFolder = (&quot;/content/drive/MyDrive/Fall 2026/Text Mining/EarningsCallsFolder&quot;)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 05 · PYTHON</div><pre><code># collect 200 call links
+callURLs = []
+
+for page in range(1, 11):
+  if page == 1:
+    url = &quot;https://www.fool.com/earnings-call-transcripts/&quot;
+  else:
+    url = (&quot;https://www.fool.com/earnings-call-transcripts/page/&quot; + str(page) + &quot;/&quot;)
+
+  response = requests.get(url)
+  soup = BeautifulSoup(response.text, &quot;html.parser&quot;)
+
+  atags = soup.find_all(&quot;a&quot;, {&quot;class&quot;: &quot;text-gray-1100 group hover:no-underline!&quot;})
+
+  for a in atags:
+    callURLs.append(&quot;https://www.fool.com&quot; + a[&quot;href&quot;])
+
+  print(&quot;Page&quot;, page, &quot;:&quot;, len(atags))</code></pre></section><section class="code-cell"><div class="cell-label">CELL 06 · PYTHON</div><pre><code>
+downloadDir = Path(DriveCallFolder)
+
+df1callRows = []
+df2speakerRows = []
+
+# earnings callIDs
+for callID, url in enumerate(callURLs, start=1):
+  response = requests.get(url)
+  soup = BeautifulSoup(response.text, &quot;html.parser&quot;)
+
+  title = soup.find(&quot;h1&quot;).get_text(&quot; &quot;, strip=True)
+  companyName = title.split(&quot; (&quot;)[0]
+
+  dateHeading = soup.find(id=&quot;date&quot;)
+  dateText = dateHeading.find_next_sibling(&quot;p&quot;).get_text(&quot; &quot;, strip=True)
+
+
+  transcriptHeading = soup.find(id=&quot;full-conference-call-transcript&quot;)
+  paragraphs = transcriptHeading.find_next_siblings(&quot;p&quot;)
+
+  paragraphTexts = []
+
+  for p in paragraphs:
+    paragraphTexts.append(p.get_text(&quot; &quot;, strip=True))
+
+  callText = &quot;\n\n&quot;.join(paragraphTexts)
+
+  df1callRows.append({
+      &quot;EarningsCallID&quot;: callID,
+      &quot;CompanyName&quot;: companyName,
+      &quot;CallDate&quot;: dateText,
+      &quot;EarningsCallText&quot;: callText,
+  })
+
+  (downloadDir / f&quot;call_{callID}.txt&quot;).write_text(callText, encoding=&quot;utf-8&quot;)
+
+  section = &quot;Prepared&quot;
+  currentTurn = None
+
+  for p in paragraphs:
+    text = p.get_text(&quot; &quot;, strip=True)
+    bold = p.find(&quot;strong&quot;)
+
+    #bold is speaker
+    if bold and bold.get_text(strip=True).endswith(&quot;:&quot;):
+      label = bold.get_text(&quot; &quot;, strip=True)
+      speakerName = label.rstrip(&quot;:&quot;).strip()
+      speech = text[len(label):].strip()
+
+      if (
+        speakerName.lower() == &quot;operator&quot;
+        and &quot;first question&quot; in speech.lower()
+        ):
+        section = &quot;QA&quot;
+
+      currentTurn = {
+          &quot;SpeakerTurnID&quot;: len(df2speakerRows) + 1,
+          &quot;EarningsCallID&quot;: callID,
+          &quot;SpeakerName&quot;: speakerName,
+          &quot;PreparedOrQA&quot;: section,
+          &quot;Text&quot;: speech,
+      }
+      df2speakerRows.append(currentTurn)
+
+    elif currentTurn is not None:
+      # Continue the same speaker&#x27;s turn across paragraphs.
+      currentTurn[&quot;Text&quot;] += &quot;\n\n&quot; + text
+
+    else:
+      raise ValueError(f&quot;Missing initial speaker label: {url}&quot;)
+
+  print(callID, companyName, dateText)
+</code></pre></section><section class="code-cell"><div class="cell-label">CELL 07 · PYTHON</div><pre><code># save DFs
+df1 = pd.DataFrame(df1callRows)
+df2 = pd.DataFrame(df2speakerRows)
+
+df1.to_excel(&#x27;/content/drive/MyDrive/Fall 2026/Text Mining/Data Frame/dataFrameCE1.xlsx&#x27;, index=False)
+df2.to_excel(&#x27;/content/drive/MyDrive/Fall 2026/Text Mining/Data Frame/dataFrameCE2.xlsx&#x27;, index=False)
+</code></pre></section><section class="code-cell"><div class="cell-label">CELL 08 · PYTHON</div><pre><code>df1.head()</code></pre></section><section class="code-cell"><div class="cell-label">CELL 09 · PYTHON</div><pre><code>df2.head()</code></pre></section><section class="code-cell"><div class="cell-label">CELL 10 · PYTHON</div><pre><code>!pip install gradio
+import pandas as pd
+import numpy as np
+import gradio as gr
+import math</code></pre></section><section class="code-cell"><div class="cell-label">CELL 11 · PYTHON</div><pre><code>print(df2.columns)
+print()
+print(df2[&quot;PreparedOrQA&quot;].value_counts())
+df2.head()</code></pre></section><section class="code-cell"><div class="cell-label">CELL 12 · PYTHON</div><pre><code>model_data = df2[[&quot;PreparedOrQA&quot;, &quot;Text&quot;]].copy()
+
+# Remove missing values
+model_data = model_data.dropna()
+
+# Make sure Text is stored as text
+model_data[&quot;Text&quot;] = model_data[&quot;Text&quot;].astype(str)
+
+# Remove blank observations
+model_data = model_data[
+    model_data[&quot;Text&quot;].str.strip() != &quot;&quot;
+]
+
+print(model_data[&quot;PreparedOrQA&quot;].value_counts())</code></pre></section><section class="code-cell"><div class="cell-label">CELL 13 · PYTHON</div><pre><code>PreparedText = model_data[
+    model_data[&quot;PreparedOrQA&quot;] == &quot;Prepared&quot;
+][&quot;Text&quot;]
+
+QAText = model_data[
+    model_data[&quot;PreparedOrQA&quot;] == &quot;QA&quot;
+][&quot;Text&quot;]</code></pre></section><section class="code-cell"><div class="cell-label">CELL 14 · PYTHON</div><pre><code>PreparedWords = &quot; &quot;.join(PreparedText).lower().split()
+
+QAWords = &quot; &quot;.join(QAText).lower().split()</code></pre></section><section class="code-cell"><div class="cell-label">CELL 15 · PYTHON</div><pre><code>PreparedDictionary = {}
+
+for word in PreparedWords:
+    if word in PreparedDictionary:
+        PreparedDictionary[word] += 1
+    else:
+        PreparedDictionary[word] = 1</code></pre></section><section class="code-cell"><div class="cell-label">CELL 16 · PYTHON</div><pre><code>QADictionary = {}
+
+for word in QAWords:
+    if word in QADictionary:
+        QADictionary[word] += 1
+    else:
+        QADictionary[word] = 1</code></pre></section><section class="code-cell"><div class="cell-label">CELL 17 · PYTHON</div><pre><code>for word in PreparedDictionary:
+    PreparedDictionary[word] = math.log(
+        PreparedDictionary[word] / len(PreparedWords)
+    )</code></pre></section><section class="code-cell"><div class="cell-label">CELL 18 · PYTHON</div><pre><code>for word in QADictionary:
+    QADictionary[word] = math.log(
+        QADictionary[word] / len(QAWords)
+    )</code></pre></section><section class="code-cell"><div class="cell-label">CELL 19 · PYTHON</div><pre><code>newSentence = &quot;we expect strong revenue growth&quot;</code></pre></section><section class="code-cell"><div class="cell-label">CELL 20 · PYTHON</div><pre><code>newSentenceWords = newSentence.lower().split()
+
+PreparedScore = 0
+QAScore = 0</code></pre></section><section class="code-cell"><div class="cell-label">CELL 21 · PYTHON</div><pre><code>for i in newSentenceWords:
+
+    if i in PreparedDictionary:
+
+        PreparedScore += PreparedDictionary[i]
+
+    else:
+
+        PreparedScore += math.log(
+            1 / len(PreparedWords)
+        )</code></pre></section><section class="code-cell"><div class="cell-label">CELL 22 · PYTHON</div><pre><code>for i in newSentenceWords:
+
+    if i in QADictionary:
+
+        QAScore += QADictionary[i]
+
+    else:
+
+        QAScore += math.log(
+            1 / len(QAWords)
+        )</code></pre></section><section class="code-cell"><div class="cell-label">CELL 23 · PYTHON</div><pre><code>print(&quot;Prepared:&quot;, PreparedScore)
+
+print(&quot;Q&amp;A:&quot;, QAScore)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 24 · PYTHON</div><pre><code>if PreparedScore &gt; QAScore:
+
+    print(&quot;Prepared Remarks&quot;)
+
+else:
+
+    print(&quot;Q&amp;A Response&quot;)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 25 · PYTHON</div><pre><code>def classify_sentence(sentence):
+
+    # Check if the user entered a sentence
+    if sentence is None or sentence.strip() == &quot;&quot;:
+
+        return (
+            &quot;Please enter a sentence.&quot;,
+            {},
+            &quot;&quot;,
+            &quot;&quot;
+        )
+
+    # Turn the sentence into lowercase words
+    newSentenceWords = sentence.lower().split()
+
+    # Start both Naive Bayes scores at zero
+    PreparedScore = 0
+    QAScore = 0
+
+
+    # --------------------------------
+    # PREPARED REMARKS SCORE
+    # --------------------------------
+
+    for i in newSentenceWords:
+
+        if i in PreparedDictionary:
+
+            PreparedScore += PreparedDictionary[i]
+
+        else:
+
+            PreparedScore += math.log(
+                1 / len(PreparedWords)
+            )
+
+
+    # --------------------------------
+    # Q&amp;A RESPONSE SCORE
+    # --------------------------------
+
+    for i in newSentenceWords:
+
+        if i in QADictionary:
+
+            QAScore += QADictionary[i]
+
+        else:
+
+            QAScore += math.log(
+                1 / len(QAWords)
+            )
+
+
+    # --------------------------------
+    # MODEL DECISION
+    # --------------------------------
+
+    if PreparedScore &gt; QAScore:
+
+        prediction = &quot;📜 PREPARED REMARKS&quot;
+
+    else:
+
+        prediction = &quot;❓ Q&amp;A RESPONSE&quot;
+
+
+    # --------------------------------
+    # CONVERT LN SCORES TO PROBABILITY
+    # --------------------------------
+
+    # Subtract the largest score first.
+    # This prevents very small numbers
+    # from causing numerical problems.
+
+    max_score = max(
+        PreparedScore,
+        QAScore
+    )
+
+    PreparedExp = math.exp(
+        PreparedScore - max_score
+    )
+
+    QAExp = math.exp(
+        QAScore - max_score
+    )
+
+    total = PreparedExp + QAExp
+
+    PreparedProbability = (
+        PreparedExp / total
+    )
+
+    QAProbability = (
+        QAExp / total
+    )
+
+
+    # --------------------------------
+    # PROBABILITY DISPLAY
+    # --------------------------------
+
+    probability_output = {
+        &quot;📜 Prepared Remarks&quot;:
+            PreparedProbability,
+
+        &quot;❓ Q&amp;A Response&quot;:
+            QAProbability
+    }
+
+
+    # --------------------------------
+    # LN SCORE DISPLAY
+    # --------------------------------
+
+    scores_text = (
+        f&quot;Prepared Remarks ln Score: &quot;
+        f&quot;{PreparedScore:.4f}\n\n&quot;
+
+        f&quot;Q&amp;A Response ln Score: &quot;
+        f&quot;{QAScore:.4f}&quot;
+    )
+
+
+    # --------------------------------
+    # EXPLANATION
+    # --------------------------------
+
+    explanation = (
+        &quot;The classification with the higher &quot;
+        &quot;(less negative) ln score is selected &quot;
+        &quot;by the Naive Bayes model.&quot;
+    )
+
+
+    return (
+        prediction,
+        probability_output,
+        scores_text,
+        explanation
+    )</code></pre></section><section class="code-cell"><div class="cell-label">CELL 26 · PYTHON</div><pre><code>prepared_example = (
+    &quot;We delivered strong revenue growth &quot;
+    &quot;during the quarter and remain confident &quot;
+    &quot;in our long-term strategy.&quot;
+)
+
+qa_example = (
+    &quot;We are very happy with the enthusiasm from &quot;
+    &quot;our customers.&quot;
+)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 27 · PYTHON</div><pre><code>total_samples = len(model_data)
+
+prepared_samples = len(PreparedText)
+
+qa_samples = len(QAText)
+
+prepared_vocabulary = len(PreparedDictionary)
+
+qa_vocabulary = len(QADictionary)
+
+total_vocabulary = len(
+    set(PreparedWords + QAWords)
+)
+
+
+print(&quot;Total Samples:&quot;, total_samples)
+
+print(
+    &quot;Prepared Samples:&quot;,
+    prepared_samples
+)
+
+print(
+    &quot;Q&amp;A Samples:&quot;,
+    qa_samples
+)
+
+print(
+    &quot;Total Vocabulary:&quot;,
+    total_vocabulary
+)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 28 · PYTHON</div><pre><code>custom_css = &quot;&quot;&quot;
+
+.gradio-container {
+    max-width: 1100px !important;
+    margin: auto !important;
+}
+
+
+/* MAIN TITLE */
+
+#main-title {
+    text-align: center;
+    padding-top: 20px;
+}
+
+#main-title h1 {
+    font-size: 48px;
+    margin-bottom: 5px;
+}
+
+#main-title h3 {
+    font-weight: 400;
+    opacity: 0.75;
+}
+
+
+/* CLASSIFICATION CARDS */
+
+.class-card {
+    border-radius: 22px;
+    padding: 30px;
+    text-align: center;
+    min-height: 220px;
+    border: 1px solid rgba(128,128,128,.25);
+    box-shadow: 0px 8px 30px rgba(0,0,0,.08);
+}
+
+.class-icon {
+    font-size: 70px;
+    margin-bottom: 10px;
+}
+
+.class-card h2 {
+    margin: 5px;
+}
+
+.class-card p {
+    opacity: .75;
+}
+
+
+/* INPUT BOX */
+
+#input-box textarea {
+    font-size: 18px !important;
+    border-radius: 15px !important;
+}
+
+
+/* ANALYZE BUTTON */
+
+#analyze-button {
+    font-size: 18px !important;
+    font-weight: bold !important;
+}
+
+
+/* PREDICTION */
+
+#prediction-box textarea {
+    font-size: 24px !important;
+    font-weight: bold !important;
+    text-align: center !important;
+}
+
+
+/* SECTION TITLES */
+
+.section-title {
+    margin-top: 25px;
+    margin-bottom: 5px;
+}
+
+
+/* STATISTIC BOXES */
+
+.stat-box {
+    text-align: center;
+    border-radius: 15px;
+    padding: 15px;
+    border: 1px solid rgba(128,128,128,.25);
+}
+
+
+/* FOOTER */
+
+#footer {
+    text-align: center;
+    opacity: .65;
+    margin-top: 30px;
+}
+
+&quot;&quot;&quot;</code></pre></section><section class="code-cell"><div class="cell-label">CELL 29 · PYTHON</div><pre><code>with gr.Blocks(
+    css=custom_css,
+    theme=gr.themes.Soft()
+) as demo:
+
+
+    # =================================
+    # HEADER
+    # =================================
+
+    gr.Markdown(
+        &quot;&quot;&quot;
+        # EARNINGS CALL AI
+        ### Can artificial intelligence tell who&#x27;s speaking?
+        &quot;&quot;&quot;,
+        elem_id=&quot;main-title&quot;
+    )
+
+
+    gr.Markdown(
+        &quot;&quot;&quot;
+        Enter a sentence from an earnings call.
+
+        Our **Naive Bayes classifier** will determine
+        whether the sentence is more similar to a
+        **Prepared Remark** or a **Q&amp;A Response**.
+        &quot;&quot;&quot;
+    )
+
+
+    # =================================
+    # PREPARED VS Q&amp;A CARDS
+    # =================================
+
+    with gr.Row():
+
+        with gr.Column():
+
+            gr.HTML(
+                &quot;&quot;&quot;
+                &lt;div class=&quot;class-card&quot;&gt;
+
+                    &lt;div class=&quot;class-icon&quot;&gt;
+                        📜
+                    &lt;/div&gt;
+
+                    &lt;h2&gt;
+                        Prepared Remarks
+                    &lt;/h2&gt;
+
+                    &lt;p&gt;
+                        Language from the scripted
+                        portion of an earnings call.
+                    &lt;/p&gt;
+
+                &lt;/div&gt;
+                &quot;&quot;&quot;
+            )
+
+
+        with gr.Column():
+
+            gr.HTML(
+                &quot;&quot;&quot;
+                &lt;div class=&quot;class-card&quot;&gt;
+
+                    &lt;div class=&quot;class-icon&quot;&gt;
+                        ❓
+                    &lt;/div&gt;
+
+                    &lt;h2&gt;
+                        Q&amp;A Response
+                    &lt;/h2&gt;
+
+                    &lt;p&gt;
+                        Language from responses during
+                        the question-and-answer section.
+                    &lt;/p&gt;
+
+                &lt;/div&gt;
+                &quot;&quot;&quot;
+            )
+
+
+    # =================================
+    # USER INPUT
+    # =================================
+
+    gr.Markdown(
+        &quot;&quot;&quot;
+        ## 🔍 Test the Model
+        &quot;&quot;&quot;,
+        elem_classes=&quot;section-title&quot;
+    )
+
+
+    sentence_input = gr.Textbox(
+        label=(
+            &quot;Enter a New Earnings Call Sentence&quot;
+        ),
+
+        placeholder=(
+            &quot;Type any earnings call sentence here...&quot;
+        ),
+
+        lines=4,
+
+        elem_id=&quot;input-box&quot;
+    )
+
+
+    # =================================
+    # EXAMPLE BUTTONS
+    # =================================
+
+    with gr.Row():
+
+        prepared_button = gr.Button(
+            &quot;📜 Try a Prepared Example&quot;
+        )
+
+        qa_button = gr.Button(
+            &quot;❓ Try a Q&amp;A Example&quot;
+        )
+
+
+    # =================================
+    # ANALYZE BUTTON
+    # =================================
+
+    analyze_button = gr.Button(
+        &quot;ANALYZE SENTENCE →&quot;,
+
+        variant=&quot;primary&quot;,
+
+        elem_id=&quot;analyze-button&quot;
+    )
+
+
+    # =================================
+    # MODEL DECISION
+    # =================================
+
+    gr.Markdown(
+        &quot;&quot;&quot;
+        ## 🤖 Model Decision
+        &quot;&quot;&quot;,
+        elem_classes=&quot;section-title&quot;
+    )
+
+
+    prediction_output = gr.Textbox(
+        label=&quot;Predicted Classification&quot;,
+
+        elem_id=&quot;prediction-box&quot;
+    )
+
+
+    # =================================
+    # PROBABILITY
+    # =================================
+
+    gr.Markdown(
+        &quot;&quot;&quot;
+        ## 📊 Classification Probability
+        &quot;&quot;&quot;,
+        elem_classes=&quot;section-title&quot;
+    )
+
+
+    probability_output = gr.Label(
+        label=(
+            &quot;Prepared Remarks vs. Q&amp;A Response&quot;
+        )
+    )
+
+
+    # =================================
+    # LN SCORES
+    # =================================
+
+    gr.Markdown(
+        &quot;&quot;&quot;
+        ## 🧮 Naive Bayes Classification Scores
+
+        ### Natural Log (ln) Scores
+        &quot;&quot;&quot;,
+        elem_classes=&quot;section-title&quot;
+    )
+
+
+    score_output = gr.Textbox(
+        label=&quot;ln Scores&quot;,
+
+        lines=5
+    )
+
+
+    explanation_output = gr.Textbox(
+        label=&quot;How the Classification Works&quot;,
+
+        lines=2
+    )
+
+
+    # =================================
+    # MODEL STATISTICS
+    # =================================
+
+    gr.Markdown(
+        &quot;&quot;&quot;
+        ## 🧠 Behind the Model
+        &quot;&quot;&quot;,
+        elem_classes=&quot;section-title&quot;
+    )
+
+
+    with gr.Row():
+
+        gr.HTML(
+            f&quot;&quot;&quot;
+            &lt;div class=&quot;stat-box&quot;&gt;
+
+                &lt;h2&gt;
+                    {total_samples:,}
+                &lt;/h2&gt;
+
+                &lt;p&gt;
+                    Total Samples
+                &lt;/p&gt;
+
+            &lt;/div&gt;
+            &quot;&quot;&quot;
+        )
+
+
+        gr.HTML(
+            f&quot;&quot;&quot;
+            &lt;div class=&quot;stat-box&quot;&gt;
+
+                &lt;h2&gt;
+                    {prepared_samples:,}
+                &lt;/h2&gt;
+
+                &lt;p&gt;
+                    Prepared Samples
+                &lt;/p&gt;
+
+            &lt;/div&gt;
+            &quot;&quot;&quot;
+        )
+
+
+        gr.HTML(
+            f&quot;&quot;&quot;
+            &lt;div class=&quot;stat-box&quot;&gt;
+
+                &lt;h2&gt;
+                    {qa_samples:,}
+                &lt;/h2&gt;
+
+                &lt;p&gt;
+                    Q&amp;A Samples
+                &lt;/p&gt;
+
+            &lt;/div&gt;
+            &quot;&quot;&quot;
+        )
+
+
+        gr.HTML(
+            f&quot;&quot;&quot;
+            &lt;div class=&quot;stat-box&quot;&gt;
+
+                &lt;h2&gt;
+                    {total_vocabulary:,}
+                &lt;/h2&gt;
+
+                &lt;p&gt;
+                    Vocabulary Words
+                &lt;/p&gt;
+
+            &lt;/div&gt;
+            &quot;&quot;&quot;
+        )
+
+
+    gr.Markdown(
+        &quot;&quot;&quot;
+        **Model:** Naive Bayes
+        **Classes:** Prepared Remarks and Q&amp;A Responses
+        **Scoring:** Word-level natural-log probabilities
+        **Classification Rule:** Higher ln score wins
+        &quot;&quot;&quot;
+    )
+
+
+    # =================================
+    # FOOTER
+    # =================================
+
+    gr.Markdown(
+        &quot;&quot;&quot;
+        ---
+
+        **Earnings Call AI**
+        • Text Mining Classification Project
+        &quot;&quot;&quot;,
+        elem_id=&quot;footer&quot;
+    )
+
+
+    # =================================
+    # EXAMPLE BUTTON ACTIONS
+    # =================================
+
+    prepared_button.click(
+        fn=lambda: prepared_example,
+
+        outputs=sentence_input
+    )
+
+
+    qa_button.click(
+        fn=lambda: qa_example,
+
+        outputs=sentence_input
+    )
+
+
+    # =================================
+    # ANALYZE BUTTON ACTION
+    # =================================
+
+    analyze_button.click(
+
+        fn=classify_sentence,
+
+        inputs=sentence_input,
+
+        outputs=[
+            prediction_output,
+            probability_output,
+            score_output,
+            explanation_output
+        ]
+    )</code></pre></section><section class="code-cell"><div class="cell-label">CELL 30 · PYTHON</div><pre><code>demo.launch()</code></pre></section></main><footer class="wrap"><span>© 2026 Sarah Pajaro</span><span>Curiosity. Analysis. Discovery.</span><a href="../../projects.html">Explore the work <span aria-hidden="true">↗</span></a></footer></body></html>

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Sarah Pajaro’s portfolio of Python, text mining, financial analysis, and machine learning projects."><title>Earnings Call Logs — Code · Sarah Pajaro</title><link rel="stylesheet" href="../../styles.css"></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="site-header wrap"><a class="wordmark" href="../../index.html" aria-label="Sarah Pajaro home"><span class="monogram">sp.</span><span>Sarah Pajaro</span></a><nav aria-label="Main navigation"><a href="../../index.html">Home</a><a href="../../about.html">About Me</a><a href="../../projects.html" aria-current="page">Projects</a></nav></header>
+<main id="main" class="wrap"><a class="back-link" href="../../projects.html">← All projects</a><section class="detail-heading"><p class="eyebrow">DATA COLLECTION</p><h1>Earnings Call Logs</h1><p class="intro">From financial conversations to structured data.</p></section><nav class="project-tabs" aria-label="Project views"><a href="index.html">Instructions &amp; outcomes</a><a href="code.html" aria-current="page">Code</a></nav><div class="code-intro"><p>Original Python code, in notebook order. Google Colab commands are preserved.</p><a class="text-link" href="../../Earning%20Call%20Logs.ipynb" download>Download notebook ↓</a></div><section class="code-cell"><div class="cell-label">CELL 02 · PYTHON</div><pre><code>from google.colab import drive
+drive.mount(&#x27;/content/drive&#x27;)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 03 · PYTHON</div><pre><code>import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+from pathlib import Path</code></pre></section><section class="code-cell"><div class="cell-label">CELL 04 · PYTHON</div><pre><code>DriveCallFolder = (&quot;/content/drive/MyDrive/Fall 2026/Text Mining/EarningsCallsFolder&quot;)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 05 · PYTHON</div><pre><code># collect 200 call links
+callURLs = []
+
+for page in range(1, 11):
+  if page == 1:
+    url = &quot;https://www.fool.com/earnings-call-transcripts/&quot;
+  else:
+    url = (&quot;https://www.fool.com/earnings-call-transcripts/page/&quot; + str(page) + &quot;/&quot;)
+
+  response = requests.get(url)
+  soup = BeautifulSoup(response.text, &quot;html.parser&quot;)
+
+  atags = soup.find_all(&quot;a&quot;, {&quot;class&quot;: &quot;text-gray-1100 group hover:no-underline!&quot;})
+
+  for a in atags:
+    callURLs.append(&quot;https://www.fool.com&quot; + a[&quot;href&quot;])
+
+  print(&quot;Page&quot;, page, &quot;:&quot;, len(atags))</code></pre></section><section class="code-cell"><div class="cell-label">CELL 06 · PYTHON</div><pre><code>
+downloadDir = Path(DriveCallFolder)
+
+df1callRows = []
+df2speakerRows = []
+
+# earnings callIDs
+for callID, url in enumerate(callURLs, start=1):
+  response = requests.get(url)
+  soup = BeautifulSoup(response.text, &quot;html.parser&quot;)
+
+  title = soup.find(&quot;h1&quot;).get_text(&quot; &quot;, strip=True)
+  companyName = title.split(&quot; (&quot;)[0]
+
+  dateHeading = soup.find(id=&quot;date&quot;)
+  dateText = dateHeading.find_next_sibling(&quot;p&quot;).get_text(&quot; &quot;, strip=True)
+
+
+  transcriptHeading = soup.find(id=&quot;full-conference-call-transcript&quot;)
+  paragraphs = transcriptHeading.find_next_siblings(&quot;p&quot;)
+
+  paragraphTexts = []
+
+  for p in paragraphs:
+    paragraphTexts.append(p.get_text(&quot; &quot;, strip=True))
+
+  callText = &quot;\n\n&quot;.join(paragraphTexts)
+
+  df1callRows.append({
+      &quot;EarningsCallID&quot;: callID,
+      &quot;CompanyName&quot;: companyName,
+      &quot;CallDate&quot;: dateText,
+      &quot;EarningsCallText&quot;: callText,
+  })
+
+  (downloadDir / f&quot;call_{callID}.txt&quot;).write_text(callText, encoding=&quot;utf-8&quot;)
+
+  section = &quot;Prepared&quot;
+  currentTurn = None
+
+  for p in paragraphs:
+    text = p.get_text(&quot; &quot;, strip=True)
+    bold = p.find(&quot;strong&quot;)
+
+    #bold is speaker
+    if bold and bold.get_text(strip=True).endswith(&quot;:&quot;):
+      label = bold.get_text(&quot; &quot;, strip=True)
+      speakerName = label.rstrip(&quot;:&quot;).strip()
+      speech = text[len(label):].strip()
+
+      if (
+        speakerName.lower() == &quot;operator&quot;
+        and &quot;first question&quot; in speech.lower()
+        ):
+        section = &quot;QA&quot;
+
+      currentTurn = {
+          &quot;SpeakerTurnID&quot;: len(df2speakerRows) + 1,
+          &quot;EarningsCallID&quot;: callID,
+          &quot;SpeakerName&quot;: speakerName,
+          &quot;PreparedOrQA&quot;: section,
+          &quot;Text&quot;: speech,
+      }
+      df2speakerRows.append(currentTurn)
+
+    elif currentTurn is not None:
+      # Continue the same speaker&#x27;s turn across paragraphs.
+      currentTurn[&quot;Text&quot;] += &quot;\n\n&quot; + text
+
+    else:
+      raise ValueError(f&quot;Missing initial speaker label: {url}&quot;)
+
+  print(callID, companyName, dateText)
+</code></pre></section><section class="code-cell"><div class="cell-label">CELL 07 · PYTHON</div><pre><code># save DFs
+df1 = pd.DataFrame(df1callRows)
+df2 = pd.DataFrame(df2speakerRows)
+
+df1.to_excel(&#x27;/content/drive/MyDrive/Fall 2026/Text Mining/Data Frame/dataFrameCE1.xlsx&#x27;, index=False)
+df2.to_excel(&#x27;/content/drive/MyDrive/Fall 2026/Text Mining/Data Frame/dataFrameCE2.xlsx&#x27;, index=False)
+</code></pre></section><section class="code-cell"><div class="cell-label">CELL 08 · PYTHON</div><pre><code>df1.head()</code></pre></section><section class="code-cell"><div class="cell-label">CELL 09 · PYTHON</div><pre><code>df2.head()</code></pre></section></main><footer class="wrap"><span>© 2026 Sarah Pajaro</span><span>Curiosity. Analysis. Discovery.</span><a href="../../projects.html">Explore the work <span aria-hidden="true">↗</span></a></footer></body></html>

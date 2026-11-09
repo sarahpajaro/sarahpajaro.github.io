@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Sarah Pajaro’s portfolio of Python, text mining, financial analysis, and machine learning projects."><title>Handwritten Digit Recognition — Code · Sarah Pajaro</title><link rel="stylesheet" href="../../styles.css"></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="site-header wrap"><a class="wordmark" href="../../index.html" aria-label="Sarah Pajaro home"><span class="monogram">sp.</span><span>Sarah Pajaro</span></a><nav aria-label="Main navigation"><a href="../../index.html">Home</a><a href="../../about.html">About Me</a><a href="../../projects.html" aria-current="page">Projects</a></nav></header>
+<main id="main" class="wrap"><a class="back-link" href="../../projects.html">← All projects</a><section class="detail-heading"><p class="eyebrow">MACHINE LEARNING</p><h1>Handwritten Digit Recognition</h1><p class="intro">Teaching a neural network to read handwritten digits.</p></section><nav class="project-tabs" aria-label="Project views"><a href="index.html">Instructions &amp; outcomes</a><a href="code.html" aria-current="page">Code</a></nav><div class="code-intro"><p>Original Python code, in notebook order. Google Colab commands are preserved.</p><a class="text-link" href="../../MNIST.ipynb" download>Download notebook ↓</a></div><section class="code-cell"><div class="cell-label">CELL 01 · PYTHON</div><pre><code>data_file = open (&quot;/content/drive/MyDrive/Fall 2026/Text Mining/mnist_train_100.csv&quot;,&#x27;r&#x27;)
+data_list = data_file.readlines ()
+data_file.close()</code></pre></section><section class="code-cell"><div class="cell-label">CELL 02 · PYTHON</div><pre><code>len(data_list)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 03 · PYTHON</div><pre><code>data_list[0]</code></pre></section><section class="code-cell"><div class="cell-label">CELL 04 · PYTHON</div><pre><code>import numpy
+import matplotlib.pyplot
+%matplotlib inline</code></pre></section><section class="code-cell"><div class="cell-label">CELL 05 · PYTHON</div><pre><code>all_values = data_list [0]. split (&#x27;,&#x27;)
+image_array = numpy.asarray (all_values [1:], dtype=float). reshape ((28,28))
+matplotlib.pyplot.imshow(image_array, cmap = &#x27;Greys&#x27;, interpolation =&#x27;None&#x27;)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 06 · PYTHON</div><pre><code>all_values = data_list [1]. split (&#x27;,&#x27;)
+image_array = numpy.asarray (all_values [1:], dtype=float). reshape ((28,28))
+matplotlib.pyplot.imshow(image_array, cmap = &#x27;Greys&#x27;, interpolation =&#x27;None&#x27;)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 07 · PYTHON</div><pre><code>import imageio.v3
+import glob</code></pre></section><section class="code-cell"><div class="cell-label">CELL 08 · PYTHON</div><pre><code>import numpy
+import scipy.special
+import matplotlib.pyplot
+
+class neuralNetwork:
+  def __init__(self, inputnodes, hiddennodes, outputnodes, learningrate):
+# set number of nodes
+      self.inodes = inputnodes
+      self.hnodes = hiddennodes
+      self.onodes = outputnodes
+# link weight matrices, wih and who
+      self.wih = numpy.random.normal (0.0,pow (self.inodes, -0.5), (self.hnodes, self.inodes))
+      self.who = numpy.random.normal (0.0, pow (self.hnodes, -0.5), (self.onodes, self.hnodes))
+      self.lr = learningrate
+  #activation function is the sigmoid function
+      self.activation_function = lambda x: scipy.special.expit (x)
+      pass
+
+#train neural network
+  def train (self,inputs_list, targets_list):
+#convery inputs to array
+    inputs = numpy.array (inputs_list, ndmin=2).T
+    targets = numpy.array (targets_list, ndmin=2).T
+
+#calculate signals into hidden layers
+    hidden_inputs = numpy.dot(self.wih, inputs)
+#calculate the signals emerging from hidden layer
+    hidden_outputs = self.activation_function (hidden_inputs)
+
+#calculate signals into final output layer
+    final_inputs=numpy.dot(self.who, hidden_outputs)
+#calcualte signals emerging from final output layer
+    final_outputs = self.activation_function(final_inputs)
+# output layer error
+    output_errors = targets - final_outputs
+# hidden layer error is the output_errors, split by weights, recombined at hidden nodes
+    hidden_errors = numpy.dot (self.who.T,output_errors)
+
+# update the weights for the links between the hidden and output laters
+    self.who += self.lr * numpy.dot ((output_errors * final_outputs * (1.0-final_outputs)),
+                                     numpy.transpose (hidden_outputs))
+#update the weights for the links between the input and hidden layers
+    self.wih += self.lr * numpy.dot ((hidden_errors * hidden_outputs * (1.0-hidden_outputs)), numpy.transpose (inputs))
+    pass
+
+  def query (self, inputs_list):
+
+    inputs = numpy.array (inputs_list, ndmin=2).T
+
+# caculate signals into hidden layer
+    hidden_inputs = numpy.dot(self.wih, inputs)
+  #calculate signals emerging from hidden layer
+    hidden_outputs = self.activation_function(hidden_inputs)
+
+    final_inputs = numpy.dot (self.who, hidden_outputs)
+    final_outputs= self.activation_function (final_inputs)
+
+
+    return final_outputs</code></pre></section><section class="code-cell"><div class="cell-label">CELL 09 · PYTHON</div><pre><code>input_nodes = 784
+hidden_nodes = 200
+output_nodes = 10
+
+learning_rate = 0.015
+
+n=neuralNetwork (input_nodes, hidden_nodes, output_nodes, learning_rate)
+</code></pre></section><section class="code-cell"><div class="cell-label">CELL 10 · PYTHON</div><pre><code>n = neuralNetwork(input_nodes,hidden_nodes,output_nodes,learning_rate)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 11 · PYTHON</div><pre><code>training_data_file = open (&quot;/content/drive/MyDrive/Fall 2026/Text Mining/mnist_train (3).csv&quot;,&#x27;r&#x27;)
+training_data_list = training_data_file.readlines ()
+training_data_file.close()</code></pre></section><section class="code-cell"><div class="cell-label">CELL 12 · PYTHON</div><pre><code>epochs = 10
+
+for e in range(epochs):
+    for record in training_data_list:
+        all_values = record.split(&#x27;,&#x27;)
+        inputs = (numpy.asarray(all_values[1:],dtype=float) / 255.0 * 0.99) + 0.01
+        targets = numpy.zeros(output_nodes) + 0.01
+        targets[int(all_values[0])] = 0.99
+        n.train(inputs, targets)
+        pass
+    pass</code></pre></section><section class="code-cell"><div class="cell-label">CELL 13 · PYTHON</div><pre><code>test_data_file = open (&quot;/content/drive/MyDrive/Fall 2026/Text Mining/mnist_test.csv&quot;)
+test_data_list = test_data_file.readlines ()
+test_data_file.close ()</code></pre></section><section class="code-cell"><div class="cell-label">CELL 14 · PYTHON</div><pre><code>scorecard = []</code></pre></section><section class="code-cell"><div class="cell-label">CELL 15 · PYTHON</div><pre><code>for record in test_data_list:
+  all_values=record.split (&#x27;,&#x27;)
+  correct_label = int(all_values[0])
+  inputs = (numpy.asarray(all_values[1:], dtype = float) / 255.0 * 0.99) + 0.1
+  outputs = n.query (inputs)
+  label = numpy.argmax(outputs)
+  if (label == correct_label):
+    scorecard.append(1)
+  else:
+    scorecard.append(0)
+    pass
+  pass</code></pre></section><section class="code-cell"><div class="cell-label">CELL 16 · PYTHON</div><pre><code>print (scorecard)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 17 · PYTHON</div><pre><code>scorecard_array = numpy.asarray(scorecard)
+print (&quot;performance = &quot;, scorecard_array.sum() / scorecard_array.size)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 18 · PYTHON</div><pre><code>import numpy
+import scipy.special
+import matplotlib.pyplot
+from PIL import Image
+import glob
+class neuralNetwork:
+  def __init__(self, inputnodes, hiddennodes, outputnodes, learningrate):
+
+      self.inodes = inputnodes
+      self.hnodes = hiddennodes
+      self.onodes = outputnodes
+
+      self.wih = numpy.random.normal (0.0,pow (self.inodes, -0.5), (self.hnodes, self.inodes))
+      self.who = numpy.random.normal (0.0, pow (self.hnodes, -0.5), (self.onodes, self.hnodes))
+
+      self.lr = learningrate
+
+      self.activation_function = lambda x: scipy.special.expit (x)
+
+      pass
+
+
+  def train (self,inputs_list, targets_list):
+
+    inputs = numpy.array (inputs_list, ndmin=2).T
+    targets = numpy.array (targets_list, ndmin=2).T
+
+
+    hidden_inputs = numpy.dot(self.wih, inputs)
+    hidden_outputs = self.activation_function (hidden_inputs)
+
+
+    final_inputs=numpy.dot(self.who, hidden_outputs)
+
+    final_outputs = self.activation_function(final_inputs)
+
+    output_errors = targets - final_outputs
+
+    hidden_errors = numpy.dot (self.who.T,output_errors)
+
+
+    self.who += self.lr * numpy.dot ((output_errors * final_outputs * (1.0-final_outputs)),
+                                     numpy.transpose (hidden_outputs))
+
+    self.wih += self.lr * numpy.dot ((hidden_errors * hidden_outputs * (1.0-hidden_outputs)), numpy.transpose (inputs))
+    pass
+
+  def query (self, inputs_list):
+
+    inputs = numpy.array (inputs_list, ndmin=2).T
+
+
+    hidden_inputs = numpy.dot(self.wih, inputs)
+    hidden_outputs = self.activation_function(hidden_inputs)
+
+    final_inputs = numpy.dot (self.who, hidden_outputs)
+    final_outputs= self.activation_function (final_inputs)
+
+
+    return final_outputs</code></pre></section><section class="code-cell"><div class="cell-label">CELL 19 · PYTHON</div><pre><code>input_nodes = 784
+hidden_noes = 200
+output_nodes = 10
+
+learning_rate = 0.01
+
+n = neuralNetwork(input_nodes,hidden_nodes,output_nodes, learning_rate)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 20 · PYTHON</div><pre><code>epochs = 10
+
+for e in range (epochs):
+  for record in training_data_list:
+    all_values = record.split (&#x27;,&#x27;)
+    inputs = (numpy.asarray(all_values [1:], dtype=float) / 255.0 * 0.99)+0.01
+    targets = numpy.zeros (output_nodes) + 0.01
+    targets[int(all_values [0])] = 0.99
+    n.train (inputs, targets)
+    pass
+  pass</code></pre></section><section class="code-cell"><div class="cell-label">CELL 21 · PYTHON</div><pre><code>training_data_file = open (&quot;/content/drive/MyDrive/Fall 2026/Text Mining/mnist_train (3).csv&quot;,&#x27;r&#x27;)
+training_data_list = training_data_file.readlines ()
+training_data_file.close()</code></pre></section><section class="code-cell"><div class="cell-label">CELL 22 · PYTHON</div><pre><code>import numpy
+import scipy.special
+import matplotlib.pyplot
+from PIL import Image
+import glob
+
+# our own image test data set
+our_own_dataset = []
+
+# load the png image data as test data set
+for image_file_name in glob.glob(&#x27;/content/drive/MyDrive/Fall 2026/Text Mining/?.png&#x27;):
+
+    # use the filename to set the correct label
+    label = int(image_file_name[-5:-4])
+
+    # load image data from png files into an array using PIL for resizing
+    print (&quot;loading ... &quot;, image_file_name)
+
+    # Open the image, convert to grayscale, and resize to 28x28
+    img = Image.open(image_file_name).convert(&#x27;L&#x27;)
+    img_resized = img.resize((28, 28))
+    img_array = numpy.asarray(img_resized)
+
+    # reshape from 28x28 to list of 784 values, invert values
+    img_data  = 255.0 - img_array.reshape(784)
+
+    # then scale data to range from 0.01 to 1.0
+    img_data = (img_data / 255.0 * 0.99) + 0.01
+    print(numpy.min(img_data))
+    print(numpy.max(img_data))
+
+    # append label and image data  to test data set
+    record = numpy.append(label,img_data)
+    our_own_dataset.append(record)
+
+    pass</code></pre></section><section class="code-cell"><div class="cell-label">CELL 23 · PYTHON</div><pre><code># record to test
+item = 0
+
+# plot image
+matplotlib.pyplot.imshow(our_own_dataset[item][1:].reshape(28,28), cmap=&#x27;Greys&#x27;, interpolation=&#x27;None&#x27;)
+
+# correct answer is first value
+correct_label = our_own_dataset[item][0]
+# data is remaining values
+inputs = our_own_dataset[item][1:]
+
+# query the network
+outputs = n.query(inputs)
+print (outputs)
+
+# the index of the highest value corresponds to the label
+label = numpy.argmax(outputs)
+print(&quot;network says &quot;, label)
+# append correct or incorrect to list
+if (label == correct_label):
+    print (&quot;match!&quot;)
+else:
+    print (&quot;no match!&quot;)
+    pass</code></pre></section><section class="code-cell"><div class="cell-label">CELL 24 · PYTHON</div><pre><code># record to test
+item = 1
+
+# plot image
+matplotlib.pyplot.imshow(our_own_dataset[item][1:].reshape(28,28), cmap=&#x27;Greys&#x27;, interpolation=&#x27;None&#x27;)
+
+# correct answer is first value
+correct_label = our_own_dataset[item][0]
+# data is remaining values
+inputs = our_own_dataset[item][1:]
+
+# query the network
+outputs = n.query(inputs)
+print (outputs)
+
+# the index of the highest value corresponds to the label
+label = numpy.argmax(outputs)
+print(&quot;network says &quot;, label)
+# append correct or incorrect to list
+if (label == correct_label):
+    print (&quot;match!&quot;)
+else:
+    print (&quot;no match!&quot;)
+    pass</code></pre></section><section class="code-cell"><div class="cell-label">CELL 25 · PYTHON</div><pre><code># record to test
+item = 2
+
+# plot image
+matplotlib.pyplot.imshow(our_own_dataset[item][1:].reshape(28,28), cmap=&#x27;Greys&#x27;, interpolation=&#x27;None&#x27;)
+
+# correct answer is first value
+correct_label = our_own_dataset[item][0]
+# data is remaining values
+inputs = our_own_dataset[item][1:]
+
+# query the network
+outputs = n.query(inputs)
+print (outputs)
+
+# the index of the highest value corresponds to the label
+label = numpy.argmax(outputs)
+print(&quot;network says &quot;, label)
+# append correct or incorrect to list
+if (label == correct_label):
+    print (&quot;match!&quot;)
+else:
+    print (&quot;no match!&quot;)
+    pass</code></pre></section><section class="code-cell"><div class="cell-label">CELL 26 · PYTHON</div><pre><code># record to test
+item = 3
+
+# plot image
+matplotlib.pyplot.imshow(our_own_dataset[item][1:].reshape(28,28), cmap=&#x27;Greys&#x27;, interpolation=&#x27;None&#x27;)
+
+# correct answer is first value
+correct_label = our_own_dataset[item][0]
+# data is remaining values
+inputs = our_own_dataset[item][1:]
+
+# query the network
+outputs = n.query(inputs)
+print (outputs)
+
+# the index of the highest value corresponds to the label
+label = numpy.argmax(outputs)
+print(&quot;network says &quot;, label)
+# append correct or incorrect to list
+if (label == correct_label):
+    print (&quot;match!&quot;)
+else:
+    print (&quot;no match!&quot;)
+    pass</code></pre></section><section class="code-cell"><div class="cell-label">CELL 27 · PYTHON</div><pre><code># record to test
+item = 4
+
+# plot image
+matplotlib.pyplot.imshow(our_own_dataset[item][1:].reshape(28,28), cmap=&#x27;Greys&#x27;, interpolation=&#x27;None&#x27;)
+
+# correct answer is first value
+correct_label = our_own_dataset[item][0]
+# data is remaining values
+inputs = our_own_dataset[item][1:]
+
+# query the network
+outputs = n.query(inputs)
+print (outputs)
+
+# the index of the highest value corresponds to the label
+label = numpy.argmax(outputs)
+print(&quot;network says &quot;, label)
+# append correct or incorrect to list
+if (label == correct_label):
+    print (&quot;match!&quot;)
+else:
+    print (&quot;no match!&quot;)
+    pass</code></pre></section><section class="code-cell"><div class="cell-label">CELL 28 · PYTHON</div><pre><code># record to test
+item = 5
+
+# plot image
+matplotlib.pyplot.imshow(our_own_dataset[item][1:].reshape(28,28), cmap=&#x27;Greys&#x27;, interpolation=&#x27;None&#x27;)
+
+# correct answer is first value
+correct_label = our_own_dataset[item][0]
+# data is remaining values
+inputs = our_own_dataset[item][1:]
+
+# query the network
+outputs = n.query(inputs)
+print (outputs)
+
+# the index of the highest value corresponds to the label
+label = numpy.argmax(outputs)
+print(&quot;network says &quot;, label)
+# append correct or incorrect to list
+if (label == correct_label):
+    print (&quot;match!&quot;)
+else:
+    print (&quot;no match!&quot;)
+    pass</code></pre></section><section class="code-cell"><div class="cell-label">CELL 29 · PYTHON</div><pre><code># record to test
+item = 6
+
+# plot image
+matplotlib.pyplot.imshow(our_own_dataset[item][1:].reshape(28,28), cmap=&#x27;Greys&#x27;, interpolation=&#x27;None&#x27;)
+
+# correct answer is first value
+correct_label = our_own_dataset[item][0]
+# data is remaining values
+inputs = our_own_dataset[item][1:]
+
+# query the network
+outputs = n.query(inputs)
+print (outputs)
+
+# the index of the highest value corresponds to the label
+label = numpy.argmax(outputs)
+print(&quot;network says &quot;, label)
+# append correct or incorrect to list
+if (label == correct_label):
+    print (&quot;match!&quot;)
+else:
+    print (&quot;no match!&quot;)
+    pass</code></pre></section><section class="code-cell"><div class="cell-label">CELL 30 · PYTHON</div><pre><code># record to test
+item = 7
+
+# plot image
+matplotlib.pyplot.imshow(our_own_dataset[item][1:].reshape(28,28), cmap=&#x27;Greys&#x27;, interpolation=&#x27;None&#x27;)
+
+# correct answer is first value
+correct_label = our_own_dataset[item][0]
+# data is remaining values
+inputs = our_own_dataset[item][1:]
+
+# query the network
+outputs = n.query(inputs)
+print (outputs)
+
+# the index of the highest value corresponds to the label
+label = numpy.argmax(outputs)
+print(&quot;network says &quot;, label)
+# append correct or incorrect to list
+if (label == correct_label):
+    print (&quot;match!&quot;)
+else:
+    print (&quot;no match!&quot;)
+    pass</code></pre></section><section class="code-cell"><div class="cell-label">CELL 31 · PYTHON</div><pre><code># record to test
+item = 8
+
+# plot image
+matplotlib.pyplot.imshow(our_own_dataset[item][1:].reshape(28,28), cmap=&#x27;Greys&#x27;, interpolation=&#x27;None&#x27;)
+
+# correct answer is first value
+correct_label = our_own_dataset[item][0]
+# data is remaining values
+inputs = our_own_dataset[item][1:]
+
+# query the network
+outputs = n.query(inputs)
+print (outputs)
+
+# the index of the highest value corresponds to the label
+label = numpy.argmax(outputs)
+print(&quot;network says &quot;, label)
+# append correct or incorrect to list
+if (label == correct_label):
+    print (&quot;match!&quot;)
+else:
+    print (&quot;no match!&quot;)
+    pass</code></pre></section><section class="code-cell"><div class="cell-label">CELL 32 · PYTHON</div><pre><code># record to test
+item = 9
+
+# plot image
+matplotlib.pyplot.imshow(our_own_dataset[item][1:].reshape(28,28), cmap=&#x27;Greys&#x27;, interpolation=&#x27;None&#x27;)
+
+# correct answer is first value
+correct_label = our_own_dataset[item][0]
+# data is remaining values
+inputs = our_own_dataset[item][1:]
+
+# query the network
+outputs = n.query(inputs)
+print (outputs)
+
+# the index of the highest value corresponds to the label
+label = numpy.argmax(outputs)
+print(&quot;network says &quot;, label)
+# append correct or incorrect to list
+if (label == correct_label):
+    print (&quot;match!&quot;)
+else:
+    print (&quot;no match!&quot;)
+    pass</code></pre></section></main><footer class="wrap"><span>© 2026 Sarah Pajaro</span><span>Curiosity. Analysis. Discovery.</span><a href="../../projects.html">Explore the work <span aria-hidden="true">↗</span></a></footer></body></html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Sarah Pajaro’s portfolio of Python, text mining, financial analysis, and machine learning projects."><title>SEC 10-K Collection — Code · Sarah Pajaro</title><link rel="stylesheet" href="../../styles.css"></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="site-header wrap"><a class="wordmark" href="../../index.html" aria-label="Sarah Pajaro home"><span class="monogram">sp.</span><span>Sarah Pajaro</span></a><nav aria-label="Main navigation"><a href="../../index.html">Home</a><a href="../../about.html">About Me</a><a href="../../projects.html" aria-current="page">Projects</a></nav></header>
+<main id="main" class="wrap"><a class="back-link" href="../../projects.html">← All projects</a><section class="detail-heading"><p class="eyebrow">DATA COLLECTION</p><h1>SEC 10-K Collection</h1><p class="intro">Building the starting point for financial text analysis.</p></section><nav class="project-tabs" aria-label="Project views"><a href="index.html">Instructions &amp; outcomes</a><a href="code.html" aria-current="page">Code</a></nav><div class="code-intro"><p>Original Python code, in notebook order. Google Colab commands are preserved.</p><a class="text-link" href="../../Download%20100%2010-Ks.ipynb" download>Download notebook ↓</a></div><section class="code-cell"><div class="cell-label">CELL 01 · PYTHON</div><pre><code>from google.colab import drive
+drive.mount (&#x27;/content/drive&#x27;)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 02 · PYTHON</div><pre><code>from google.colab import drive
+idxFile=&quot;/content/drive/MyDrive/Fall 2026/Text Mining/Fall 2026 Text Mining/week 01/company.idx&quot;
+websitePrefix = &quot;https://www.sec.gov/Archives/&quot;
+
+
+with open(idxFile) as IndexFile:
+  text = IndexFile.readlines () #this will put the lines in a list
+count = 0
+myAttr= []
+for i in range (340081):
+  #formType=&quot;&quot;
+  #CIK = &quot;&quot;
+  #fileDate = &quot;&quot;
+  #URL = &quot;&quot;
+  fileAttr = {}
+  if (count == 100):
+    break
+  if &quot;10-K&quot; in text[i] and &quot;10-K/A&quot; not in text[i]:
+    #URL = (websitePrefix + text[i].split()[-1])
+    #fileDate = text[i].split()[-2]
+    #CIK = text[i].split()[-3]
+    #formType = text[i].split()[-4]
+    fileAttr [&#x27;CIK&#x27;] = text[i].split()[-3]
+    fileAttr [&#x27;URL&#x27;]= websitePrefix + text[i].split()[-1]
+    fileAttr [&#x27;fileDate&#x27;]= text[i].split()[-2]
+    fileAttr [&#x27;formType&#x27;]= text[i].split()[-4]
+    print(fileAttr)
+    print(fileAttr[&quot;URL&quot;])
+    myAttr.append(fileAttr)
+    count +=1
+    continue
+
+
+
+</code></pre></section><section class="code-cell"><div class="cell-label">CELL 03 · PYTHON</div><pre><code>for p in myAttr:
+    print(p)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 04 · PYTHON</div><pre><code>import requests
+
+headers = {
+    &quot;User-Agent&quot;: &quot;MyResearchApp sarah@example.com&quot;
+}
+for i in range(100):
+  currentAttr = myAttr[i]
+  url = currentAttr[&quot;URL&quot;]
+
+  response = requests.get(url, headers=headers)
+  #print (response.text[:1000])
+
+  fileName = currentAttr[&#x27;formType&#x27;]+&quot;_&quot;+currentAttr[&#x27;CIK&#x27;]+&quot;_&quot;+currentAttr[&#x27;fileDate&#x27;]+&quot;.txt&quot;
+
+  downloadDir = &quot;/content/drive/MyDrive/Fall 2026/Text Mining/10-Ks Assignment/&quot;
+  with open(downloadDir + fileName, &quot;w&quot;) as f:
+    f.write(response.text)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 05 · PYTHON</div><pre><code>DictionaryWords = {}
+
+for currentAttr in myAttr:
+  fileName = currentAttr[&#x27;formType&#x27;]+&quot;_&quot;+currentAttr[&#x27;CIK&#x27;]+&quot;_&quot;+currentAttr[&#x27;fileDate&#x27;]+&quot;.txt&quot;
+  filePath = downloadDir + fileName
+
+  with open(filePath,&quot;r&quot;, encoding=&quot;utf-8&quot;, errors=&quot;ignore&quot;) as f:
+      text = f.read()
+
+  cleaned_text = response.text.lower().replace(&quot;.&quot;, &quot; &quot;).replace(&quot;,&quot;, &quot; &quot;)
+  words = cleaned_text.split()
+
+
+for word in words:
+
+  if word in DictionaryWords.keys():
+    DictionaryWords[word] += 1
+  else:
+    DictionaryWords[word] = 1
+
+print(DictionaryWords)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 06 · PYTHON</div><pre><code>print(&quot;Sarah&quot;.lower())
+print(&quot;Sarah.&quot;.replace(&quot;.&quot;,&quot; &quot;))
+
+sampleDict = {&#x27;one&#x27;:1, &quot;two&quot;:2}
+
+print(sampleDict.keys())
+
+if &quot;one&quot; in (sampleDict.keys()):
+    print(&quot;true&quot;)
+else:
+    print(&quot;false&quot;)
+a = 1
+a +=1
+print (a)</code></pre></section></main><footer class="wrap"><span>© 2026 Sarah Pajaro</span><span>Curiosity. Analysis. Discovery.</span><a href="../../projects.html">Explore the work <span aria-hidden="true">↗</span></a></footer></body></html>

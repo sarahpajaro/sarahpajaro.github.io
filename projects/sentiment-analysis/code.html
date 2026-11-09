@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Sarah Pajaro’s portfolio of Python, text mining, financial analysis, and machine learning projects."><title>Financial Sentiment Analysis — Code · Sarah Pajaro</title><link rel="stylesheet" href="../../styles.css"></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="site-header wrap"><a class="wordmark" href="../../index.html" aria-label="Sarah Pajaro home"><span class="monogram">sp.</span><span>Sarah Pajaro</span></a><nav aria-label="Main navigation"><a href="../../index.html">Home</a><a href="../../about.html">About Me</a><a href="../../projects.html" aria-current="page">Projects</a></nav></header>
+<main id="main" class="wrap"><a class="back-link" href="../../projects.html">← All projects</a><section class="detail-heading"><p class="eyebrow">TEXT MINING</p><h1>Financial Sentiment Analysis</h1><p class="intro">Measuring the language inside annual reports.</p></section><nav class="project-tabs" aria-label="Project views"><a href="index.html">Instructions &amp; outcomes</a><a href="code.html" aria-current="page">Code</a></nav><div class="code-intro"><p>Original Python code, in notebook order. Google Colab commands are preserved.</p><a class="text-link" href="../../SentimentAnalysis.ipynb" download>Download notebook ↓</a></div><section class="code-cell"><div class="cell-label">CELL 01 · PYTHON</div><pre><code>from google.colab import drive
+drive.mount (&#x27;/content/drive&#x27;)</code></pre></section><section class="code-cell"><div class="cell-label">CELL 02 · PYTHON</div><pre><code>import numpy as np
+import pandas as pd</code></pre></section><section class="code-cell"><div class="cell-label">CELL 03 · PYTHON</div><pre><code>import os
+import re
+import pandas as pd
+from bs4 import BeautifulSoup
+
+#Loading Dictionary into Sets
+def load_dictionary_set(filepath):
+    with open(filepath, &#x27;r&#x27;, encoding=&#x27;utf-8&#x27;, errors=&#x27;ignore&#x27;) as f:
+        return set(f.read().lower().split())
+
+#Folder with my dictionaries from drive
+dictionary_folder = &quot;/content/drive/MyDrive/Fall 2026/Text Mining/Dictionaries/&quot;
+negative_words = load_dictionary_set(dictionary_folder + &quot;negative words.txt&quot;)
+positive_words = load_dictionary_set(dictionary_folder + &quot;positive words.txt&quot;)
+litigious_words = load_dictionary_set(dictionary_folder + &quot;litigious words.txt&quot;)
+
+#Path to folder of 100 10-Ks
+folder_path = &quot;/content/drive/MyDrive/Fall 2026/Text Mining/10-Ks Assignment&quot;
+rows = []
+
+for filename in os.listdir(folder_path):
+    if filename.endswith(&quot;.txt&quot;):
+        filepath = os.path.join (folder_path, filename)
+
+# Read every file
+    with open(filepath, &#x27;r&#x27;, encoding=&#x27;utf-8&#x27;, errors=&#x27;ignore&#x27;) as f:
+      raw_html = f.read()
+
+#clean the text
+    clean_text = BeautifulSoup(raw_html, &#x27;lxml&#x27;).get_text()
+    clean_text = re.sub(r&#x27;[^a-zA-Z\s]&#x27;, &#x27;&#x27;, clean_text)
+
+# split words
+    words = clean_text.lower().split()
+    word_count = len(words)
+
+# Count  occurrences
+    pos_count = sum(1 for w in words if w in positive_words)
+    neg_count = sum(1 for w in words if w in negative_words)
+    lit_count = sum(1 for w in words if w in litigious_words)
+
+# Calculate rates
+    pos_rate = pos_count / word_count if word_count &gt; 0 else 0
+    neg_rate = neg_count / word_count if word_count &gt; 0 else 0
+    lit_rate = lit_count / word_count if word_count &gt; 0 else 0
+
+# Create the dataframe
+    rows.append({
+      &#x27;filename&#x27;: filename,
+      &#x27;wordCount&#x27;: word_count,
+      &#x27;PositiveWordCount&#x27;: pos_count,
+      &#x27;NegativeWordCount&#x27;: neg_count,
+      &#x27;LitigiousWordCount&#x27;: lit_count,
+      &#x27;PositivityRate&#x27;: pos_rate,
+      &#x27;NegativityRate&#x27;: neg_rate,
+      &#x27;LitigiousRate&#x27;: lit_rate
+    })
+# show all rows
+df = pd.DataFrame(rows)
+pd.set_option(&#x27;display.max_rows&#x27;, None)
+display(df)</code></pre></section></main><footer class="wrap"><span>© 2026 Sarah Pajaro</span><span>Curiosity. Analysis. Discovery.</span><a href="../../projects.html">Explore the work <span aria-hidden="true">↗</span></a></footer></body></html>
